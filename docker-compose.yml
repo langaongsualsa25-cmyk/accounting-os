@@ -1,0 +1,75 @@
+# Sandbox stack (blueprint §10: "Docker Compose สำหรับ Sandbox").
+# Everything runs on the local network; no service calls an external API.
+# Use only fictional seed data in this stack.
+name: accounting-os
+
+services:
+  postgres:
+    image: postgres:16.15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: accounting_os
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d accounting_os"]
+      interval: 5s
+      retries: 20
+
+  # Transaction pooling is compatible with the per-transaction
+  # `SET LOCAL app.tenant_id` used for Row-Level Security.
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.26.1-p0
+    environment:
+      DB_HOST: postgres
+      DB_NAME: accounting_os
+      DB_USER: app_user
+      DB_PASSWORD: ${APP_DB_PASSWORD:?set in .env}
+      POOL_MODE: transaction
+      AUTH_TYPE: scram-sha-256
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  redis:
+    image: redis:7.4.12
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set in .env}
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  migrate:
+    build: .
+    command: ["node", "dist/scripts/migrate.js"]
+    environment:
+      MIGRATION_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/accounting_os
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://app_user:${APP_DB_PASSWORD}@pgbouncer:5432/accounting_os
+      PORT: "3000"
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      pgbouncer:
+        condition: service_started
+      redis:
+        condition: service_started
+
+volumes:
+  pgdata:
+  redisdata:
