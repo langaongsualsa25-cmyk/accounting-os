@@ -2,12 +2,11 @@ import { Global, Inject, Module, OnApplicationShutdown } from '@nestjs/common';
 import { Kysely, PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
 import { loadConfig } from '../config';
+import { Database } from './schema';
+
+export { Database };
 
 export const DB = Symbol('DB');
-
-// Table types are added per domain module as migrations introduce them.
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface Database {}
 
 export function createDb(connectionString: string): Kysely<Database> {
   return new Kysely<Database>({

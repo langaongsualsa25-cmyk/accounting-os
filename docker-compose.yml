@@ -57,11 +57,27 @@ services:
       postgres:
         condition: service_healthy
 
+  # Fictional sandbox data only (seeds/sandbox.sql). Run on demand:
+  #   docker compose run --rm seed
+  seed:
+    build: .
+    command: ["node", "dist/scripts/seed.js"]
+    profiles: ["seed"]
+    environment:
+      MIGRATION_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/accounting_os
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   app:
     build: .
     environment:
       DATABASE_URL: postgres://app_user:${APP_DB_PASSWORD}@pgbouncer:5432/accounting_os
       PORT: "3000"
+      # Public key of the Keycloak realm; tokens are verified locally.
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:?set in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8080/realms/accounting-os}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-accounting-os-api}
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
