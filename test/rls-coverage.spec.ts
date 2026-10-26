@@ -4,9 +4,8 @@
 import { Client } from 'pg';
 import { connect } from './helpers';
 
-// Identity catalogue without tenant_id (a user can work for several
-// companies). Anything else must carry tenant_id.
-const GLOBAL_TABLES = ['permissions', 'role_permissions', 'roles', 'tenants', 'users'];
+// Every table carries tenant_id (Phong's decision, 2026-10-26), except
+// migration bookkeeping, which app_user cannot read at all.
 const NOT_EXPOSED = ['schema_migrations'];
 
 describe('RLS coverage', () => {
@@ -33,10 +32,8 @@ describe('RLS coverage', () => {
     expect(missing).toEqual([]);
   });
 
-  it('gives tenant_id to every table outside the identity catalogue', () => {
-    const missing = tables
-      .filter((t) => !t.hasTenantId && !GLOBAL_TABLES.includes(t.name) && !NOT_EXPOSED.includes(t.name))
-      .map((t) => t.name);
+  it('gives tenant_id to every table', () => {
+    const missing = tables.filter((t) => !t.hasTenantId && !NOT_EXPOSED.includes(t.name)).map((t) => t.name);
     expect(missing).toEqual([]);
   });
 

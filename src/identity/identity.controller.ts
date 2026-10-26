@@ -22,10 +22,11 @@ export class IdentityController {
   myTenants(@CurrentPrincipal() principal: Principal) {
     return withContext(this.db, { subject: principal.subject }, (trx) =>
       trx
-        .selectFrom('tenants')
-        .innerJoin(sql<{ tenant_id: string; role_id: string }>`app.my_memberships()`.as('m'), 'm.tenant_id', 'tenants.id')
-        .select(['tenants.id', 'tenants.code', 'tenants.name', 'm.role_id as role'])
-        .orderBy('tenants.code')
+        .selectFrom(
+          sql<{ tenant_id: string; code: string; name: string; role_id: string }>`app.my_memberships()`.as('m'),
+        )
+        .select(['m.tenant_id as id', 'm.code', 'm.name', 'm.role_id as role'])
+        .orderBy('m.code')
         .execute(),
     );
   }

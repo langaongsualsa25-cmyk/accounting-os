@@ -59,8 +59,6 @@ describe('tenant isolation (RLS)', () => {
     for (const table of tenantTables) {
       expect({ table, ...(await countByTenant(table)) }).toEqual({ table, a: 0, b: 0 });
     }
-    const tenants = (await app.query('select id from tenants')).rows.map((r) => r.id);
-    expect(tenants).toEqual([TENANT_A]);
   });
 
   it('a user who works for both companies sees only the company in the current context', async () => {
@@ -73,10 +71,17 @@ describe('tenant isolation (RLS)', () => {
 
   it('without an authenticated subject nothing is visible, not even tenants or users', async () => {
     await actAs(app, null, TENANT_A);
-    for (const table of [...tenantTables, 'tenants', 'users']) {
+    expect(tenantTables).toEqual(expect.arrayContaining(['tenants', 'users', 'roles']));
+    for (const table of tenantTables) {
       const { rows } = await app.query(`select count(*)::int as n from ${table}`);
       expect({ table, n: rows[0].n }).toEqual({ table, n: 0 });
     }
+  });
+
+  it('a person working for both companies has one user row per company and sees only the current one', async () => {
+    await actAs(app, SEED.sharedSupervisor, TENANT_B);
+    const { rows } = await app.query('select tenant_id from users where external_subject = $1', [SEED.sharedSupervisor]);
+    expect(rows).toEqual([{ tenant_id: TENANT_B }]);
   });
 
   it('users of another company are not visible', async () => {
@@ -138,7 +143,7 @@ describe('RBAC levels (blueprint §3)', () => {
     await actAs(app, SEED.adminA, TENANT_A);
     await expect(
       app.query(
-        "update user_tenant_access set role_id = 'super_admin' where tenant_id = $1 and user_id = '00000000-0000-4000-8000-000000000101'",
+        "update users set role_id = 'super_admin' where tenant_id = $1 and id = '00000000-0000-4000-8000-000000000101'",
         [TENANT_A],
       ),
     ).rejects.toThrow(/row-level security/);
@@ -147,14 +152,29 @@ describe('RBAC levels (blueprint §3)', () => {
   it('supervisor cannot change anyone’s access', async () => {
     await actAs(app, SEED.supervisorA, TENANT_A);
     const { rowCount } = await app.query(
-      "update user_tenant_access set role_id = 'supervisor' where tenant_id = $1 and user_id = '00000000-0000-4000-8000-000000000101'",
+      "update users set role_id = 'supervisor' where tenant_id = $1 and id = '00000000-0000-4000-8000-000000000101'",
       [TENANT_A],
     );
     expect(rowCount).toBe(0);
   });
 
-  it('app_user cannot create tenants or users directly', async () => {
+  it('company admin cannot add a user to another company', async () => {
+    await actAs(app, SEED.adminA, TENANT_A);
+    await expect(
+      app.query(
+        "insert into users (tenant_id, external_subject, display_name, role_id) values ($1, 'x', 'x', 'staff')",
+        [TENANT_B],
+      ),
+    ).rejects.toThrow(/row-level security/);
+  });
+
+  it('app_user cannot create companies or provision one', async () => {
     await actAs(app, SEED.adminA, TENANT_A);
     await expect(app.query("insert into tenants (code, name) values ('X', 'X')")).rejects.toThrow(/permission denied/);
+    await app.query('rollback');
+    await actAs(app, SEED.adminA, TENANT_A);
+    await expect(
+      app.query("select admin.provision_tenant(gen_random_uuid(), 'X', 'X')"),
+    ).rejects.toThrow(/permission denied/);
   });
 });
