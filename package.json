@@ -13,12 +13,14 @@
     "start:dev": "ts-node src/main.ts",
     "typecheck": "tsc --noEmit",
     "migrate": "ts-node scripts/migrate.ts",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "seed": "ts-node scripts/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.8",
     "@nestjs/core": "^11.2.8",
     "@nestjs/platform-express": "^11.2.8",
+    "jose": "^5.10.0",
     "kysely": "^0.28.18",
     "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
