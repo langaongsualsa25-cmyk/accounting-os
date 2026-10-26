@@ -22,7 +22,7 @@ describe('migrations', () => {
     const names = await withClient(process.env.ADMIN_DATABASE_URL!, async (c) =>
       (await c.query('select name from schema_migrations order by name')).rows.map((r) => r.name),
     );
-    expect(names).toEqual(expect.arrayContaining(['0001_baseline.sql', '0002_identity_tenant_rls.sql']));
+    expect(names).toEqual(['0001_baseline.sql', '0002_identity_tenant_rls.sql', '0003_audit_versions_four_eyes.sql']);
   });
 });
 

@@ -48,7 +48,61 @@ export interface UserDepartmentAccessTable {
   granted_at: Timestamp;
 }
 
+export interface AuditLogsTable {
+  id: Generated<string>;
+  tenant_id: string;
+  seq: string;
+  occurred_at: Timestamp;
+  actor_user_id: string | null;
+  actor_subject: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  before_data: unknown;
+  after_data: unknown;
+  reason: string | null;
+  prev_hash: Buffer | null;
+  hash: Buffer;
+}
+
+export type ChangeRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+
+export interface ChangeRequestsTable {
+  id: Generated<string>;
+  tenant_id: string;
+  entity_type: string;
+  entity_id: string | null;
+  base_version: number | null;
+  proposed: unknown;
+  reason: string;
+  status: ColumnType<ChangeRequestStatus, ChangeRequestStatus | undefined, ChangeRequestStatus>;
+  // Set by the database from the caller's identity.
+  requested_by: ColumnType<string, string | undefined, never>;
+  requested_at: Timestamp;
+  decided_by: ColumnType<string | null, never, never>;
+  decided_at: ColumnType<Date | null, never, never>;
+  decision_note: string | null;
+}
+
+export interface RecordVersionsTable {
+  id: Generated<string>;
+  tenant_id: string;
+  entity_type: string;
+  entity_id: string;
+  version: number;
+  data: unknown;
+  effective_from: Timestamp;
+  effective_to: Date | null;
+  change_request_id: string | null;
+  created_by: string | null;
+  approved_by: string | null;
+  created_at: Timestamp;
+}
+
 export interface Database {
+  audit_logs: AuditLogsTable;
+  change_requests: ChangeRequestsTable;
+  record_versions: RecordVersionsTable;
   tenants: TenantsTable;
   roles: RolesTable;
   users: UsersTable;

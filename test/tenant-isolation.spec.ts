@@ -47,7 +47,8 @@ describe('tenant isolation (RLS)', () => {
   });
 
   it('a user of company A sees only company A rows in every tenant table', async () => {
-    await actAs(app, SEED.staffA, TENANT_A);
+    // Company admin: the broadest in-company role (staff cannot read audit_logs).
+    await actAs(app, SEED.adminA, TENANT_A);
     for (const table of tenantTables) {
       const counts = await countByTenant(table);
       expect({ table, b: counts.b, seesA: counts.a > 0 }).toEqual({ table, b: 0, seesA: true });
