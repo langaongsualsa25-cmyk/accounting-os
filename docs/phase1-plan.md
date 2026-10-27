@@ -36,10 +36,10 @@
 | 2 | Audit + Versioning + Four-eyes: audit_logs (append-only), change_requests, รูปแบบ versioned record (effective_from/to, version) | 6, ข้อห้าม, 11 | UPDATE/DELETE audit ถูกปฏิเสธ, hash chain ตรวจพบการแก้, ผู้แก้อนุมัติเองไม่ได้ |
 | 3 | Company/Person Master (ชุดข้อมูลขั้นต่ำ): companies, company_names, addresses, persons, person_documents, company_roles, directors, shareholders, share_allocations, signing_authorities | 4.1, 4.2 (กฎหุ้น/ทุน), 11 | แก้ข้อมูลต้องผ่าน change request, แสดงค่าเดิม/ใหม่/ผู้แก้/เหตุผล/ผู้อนุมัติ, กฎหุ้นรวม 100% |
 | 4 | Workflow engine: service_types, workflow_templates, workflow_steps, step_dependencies, cases, case_steps, assignments; 13 สถานะมาตรฐาน + 4 แบบ dependency | 5 | state machine ห้ามข้ามสถานะผิด, Finish-to-Start/Parallel/Close-Blocked/Override by Approval |
-| 5 | Checklist + Evidence + Review/Approval/Reject + Pre-submission Gate + Draft Isolation | 6 | Draft ใช้สร้างฉบับพร้อมยื่นไม่ได้, gate ปิดเมื่อหลักฐานไม่ครบ, ตรวจสองชั้น |
-| 6 | SLA + Holidays + Notification (in-app + WebSocket) + Escalation + Current Accountability Owner + เหตุผลรอ (ลูกค้า/ราชการ/อนุมัติ/ระบบ/ผู้ปฏิบัติ) | 7, 12 (กำหนดเวลาตามกฎ+วันหยุด) | เปลี่ยนกฎ SLA/วันหยุดได้โดยไม่แก้โค้ด, ยกระดับตามความเสี่ยง, notification ไม่ข้าม tenant |
+| 5 | Checklist + Evidence + Review/Approval/Reject + Pre-submission Gate + Draft Isolation + **เอกสารที่ลูกค้าต้องส่งรายเดือน (สถานะ ครบ/ไม่ครบ/ต้องแก้) และโครงจัดเก็บ บริษัท/เดือน/ประเภท** | 6, แผน Automation 5.1 | Draft ใช้สร้างฉบับพร้อมยื่นไม่ได้, gate ปิดเมื่อหลักฐานไม่ครบ, ตรวจสองชั้น, สถานะเอกสารรายเดือนถูกต้อง |
+| 6 | SLA + Holidays + Notification (in-app + WebSocket) + **เตือนเอกสารค้างตามปฏิทิน (ภายในระบบ)** + Escalation + Current Accountability Owner + เหตุผลรอ (ลูกค้า/ราชการ/อนุมัติ/ระบบ/ผู้ปฏิบัติ) | 7, 12 (กำหนดเวลาตามกฎ+วันหยุด) | เปลี่ยนกฎ SLA/วันหยุดได้โดยไม่แก้โค้ด, ยกระดับตามความเสี่ยง, notification ไม่ข้าม tenant |
 | 7 | Dashboard API: ภาพรวม, ความเสี่ยง, สาเหตุค้าง, คุณภาพ (อัตราตีกลับ), กำลังคน, drill-down ถึง timeline | 9, 8 (สูตรอัตราความผิดพลาด — คำนวณแบบไม่ใช้ AI) | ตัวเลข KPI ตรงกับ seed, แยก ผู้พบ/ผู้ถือครอง/ผู้ส่งต่อ |
-| 8 | Frontend PWA ขั้นต่ำ: login, รายการงาน, หน้าเคส, approve/reject, notification, dashboard | 10 | E2E (Playwright) เคสนำร่องครบวงจร |
+| 8 | Frontend PWA ขั้นต่ำ: login, รายการงาน, หน้าเคส, approve/reject, notification, dashboard, **หน้าอัปโหลดตรวจภาพชัดด้วย Tesseract.js บนเบราว์เซอร์** | 10, แผน Automation | E2E (Playwright) เคสนำร่องครบวงจร |
 | 9 | Hardening: idempotency key (retry/duplicate), Backup/Restore test จริง, Audit Trail test, เอกสารติดตั้ง/ส่งมอบ | 12 Acceptance, 1 (ส่งมอบ) | restore ได้จริง, duplicate request ไม่สร้าง audit/สถานะซ้ำ |
 
 ## สมมติฐานแทนข้อมูลที่ยังไม่ตัดสินใจ (ส่วนที่ 13)
@@ -47,3 +47,9 @@
 - Workflow นำร่อง 3 แบบ: ประกันสังคมรายเดือน, ภ.ง.ด.1, ภ.พ.30 (เป็นแค่ template ของ workflow ยังไม่ทำ form mapping)
 - บริษัทสมมติ 2 tenant (A, B), 2 แผนก, ผู้ใช้ทุกระดับ, SLA ตัวอย่าง, วันหยุดราชการตัวอย่าง
 - ไม่ใช้ชื่อ/เลขประจำตัวจริงใด ๆ — เลขผู้เสียภาษีสมมติที่ checksum ผ่านแต่ขึ้นต้นด้วย prefix ทดสอบ
+
+## รวมแผน Automation (27.10.2026) — Phong เลือกให้รวมเข้าพิมพ์เขียวแบบ On-Premise
+ดูการเทียบใน [automation-plan-review.md](automation-plan-review.md) ส่วนที่เพิ่มในเฟส 1 ใส่ไว้ใน PR 5, 6, 8 ด้านบนแล้ว ส่วนที่เลื่อนไปเฟสถัดไป:
+- **เฟส 2**: Portal ให้ลูกค้าอัปโหลดเอง (บทบาทลูกค้าที่เห็นเฉพาะบริษัทตัวเอง), นำเข้า Bank Statement เป็นไฟล์ (CSV/Excel) + Auto-matching แสดงเฉพาะ Exception, ข้อความเตือนลูกค้าที่ไม่มีข้อมูลลับ
+- **เฟส 3**: OCR ภายใน (ไม่ใช้ Google Vision/Document AI) + Auto-categorization + ฟอร์มให้คนตรวจก่อนบันทึก
+- ไม่ใช้ Google Sheets/Drive/Apps Script/AppSheet/Looker และไม่เรียก Bank API/FlowAccount API จากโค้ด (กฎข้อ 4)
